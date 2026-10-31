@@ -182,8 +182,8 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:
 .media{max-width:720px;margin-bottom:8px}
 .media.with-desc{max-width:none;margin-top:28px;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:40px;align-items:start}
 .media.with-desc .vdesc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 76px);margin-bottom:24px}
-.media.with-desc .vdesc[open] .vbody{max-height:calc(100vh - 170px);overflow-y:auto;overscroll-behavior:contain}
-@media (max-width:860px){.media.with-desc{display:block}.media.with-desc .vdesc{position:static}.media.with-desc .vdesc[open] .vbody{max-height:none}}
+.media.with-desc .vdesc .vbody{max-height:calc((100vh - 170px) * .9);overflow-y:auto;overscroll-behavior:contain}
+@media (max-width:860px){.media.with-desc{display:block}.media.with-desc .vdesc{position:static}.media.with-desc .vdesc .vbody{max-height:55vh}}
 .video{display:grid;gap:8px;text-decoration:none;min-width:0}
 .vmeta{display:flex;flex-direction:column;font-size:13px;color:var(--muted);line-height:1.5}
 .vmeta b{color:var(--ink);font-size:14px}
@@ -200,10 +200,7 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:
 .video .plate .play::after{border-left-width:14px;border-top-width:9px;border-bottom-width:9px}
 .vcap{font-size:13px;color:var(--muted);margin:0 0 20px}
 .vdesc{border:1px solid var(--line);border-radius:6px;background:var(--surface);margin-bottom:36px}
-.vdesc summary{cursor:pointer;padding:14px 18px;font-weight:600;font-size:15px;list-style:none;display:flex;justify-content:space-between;align-items:center}
-.vdesc summary::-webkit-details-marker{display:none}
-.vdesc summary::after{content:"+";font-family:var(--f-mono);font-size:18px;color:var(--muted)}
-.vdesc[open] summary::after{content:"−"}
+.vdesc .vhead{padding:12px 18px;font-weight:600;font-size:15px}
 .vdesc .vbody{padding:0 18px 18px;border-top:1px solid var(--line);font-size:14px;line-height:1.65}
 .vdesc .vbody p{margin:14px 0 0;max-width:62ch}
 .vdesc .vnote{font-size:13px;color:var(--muted)}
@@ -375,7 +372,7 @@ function refDetail(x){
   const em = LIVE && x.video ? embedOf(x.video) : null;
   const vbox = !x.video ? `<div class="vlink">${plate(x,true,"영상 준비 중","")}</div><span class="vmeta"><b>영상 준비 중</b><span>유튜브 업로드 전 · 내 폴더 원본으로 정리함</span></span>` : `${em?`<button type="button" class="vplay" data-embed="${esc(em)}" aria-label="영상 재생">${plate(x,true,"",x.video)}</button>`:`<a class="vlink" href="${esc(x.video)}" target="_blank" rel="noopener">${plate(x,true,"",x.video)}</a>`}<span class="vmeta"><b>${esc(x.videoKind||"영상")}</b><span><a href="${esc(x.video)}" target="_blank" rel="noopener">${host(x.video)}에서 보기 ↗</a></span></span>`;
   const media = `<section class="media ${x.videoDesc?"with-desc":""}"><div class="vids"><div class="video">${vbox}</div></div>
-      ${x.videoDesc?`<details class="vdesc"><summary>영상 내용</summary><div class="vbody">${x.videoDesc.map(sec=>typeof sec==="string"?`<p>${esc(sec)}</p>`:`<h4>${esc(sec.h)}</h4>${paras(sec.p)}`).join("")}${x.videoNote?`<p class="vnote">${esc(x.videoNote)}</p>`:""}<button type="button" class="vclose">접기 ▲</button></div></details>`:""}</section>`;
+      ${x.videoDesc?`<div class="vdesc"><div class="vhead">영상 내용</div><div class="vbody">${x.videoDesc.map(sec=>typeof sec==="string"?`<p>${esc(sec)}</p>`:`<h4>${esc(sec.h)}</h4>${paras(sec.p)}`).join("")}${x.videoNote?`<p class="vnote">${esc(x.videoNote)}</p>`:""}</div></div>`:""}</section>`;
   const f0 = (x.folders||[])[0];
   return `<div class="crumbs"><a href="#">P.reference</a><span>›</span>${f0?`<a href="#f/${fslug(f0)}">${esc(f0)}</a><span>›</span>`:""}<span>${esc(x.title)}</span></div>
     <header class="dhead">${tagsHtml(refTags(x))}<h1>${esc(x.title)}</h1>${x.memo?`<p class="ko" style="font-size:15px">내 메모 · ${esc(x.memo)}</p>`:""}${x.ko?`<p class="ko">${esc(x.ko)}</p>`:""}</header>
@@ -482,7 +479,7 @@ function detail(e){
     <header class="dhead"><div class="awards">${awards}</div><h1>${esc(e.title)}</h1>${e.ko?`<p class="ko">${esc(e.ko)}</p>`:""}</header>`;
   const media = `<section class="media ${e.videoDesc?"with-desc":""}">
       <div class="vids ${vids.length>1?"two":""}">${vids.map(v=>{ const em = LIVE ? embedOf(v.url) : null; const meta=`<span class="vmeta"><b>${esc(v.kind)}</b><span>${v.title?esc(v.title)+" · ":""}<a href="${esc(v.url)}" target="_blank" rel="noopener">${host(v.url)}에서 보기 ↗</a></span></span>`; return em ? `<div class="video"><button type="button" class="vplay" data-embed="${esc(em)}" aria-label="${esc(v.kind)} 재생">${plate(e,true,v.kind,v.url)}</button>${meta}</div>` : `<div class="video"><a class="vlink" href="${esc(v.url)}" target="_blank" rel="noopener" aria-label="${esc(v.kind)} 열기">${plate(e,true,v.kind,v.url)}</a>${meta}</div>`; }).join("")}</div>
-      ${e.videoDesc?`<details class="vdesc" id="vd-${e.id}"><summary>영상 내용</summary><div class="vbody">${e.videoDesc.map(sec=>typeof sec==="string"?`<p>${esc(sec)}</p>`:`<h4>${esc(sec.h)}</h4>${paras(sec.p)}`).join("")}${e.videoNote?`<p class="vnote">${esc(e.videoNote)}</p>`:""}<button type="button" class="vclose">접기 ▲</button></div></details>`:""}
+      ${e.videoDesc?`<div class="vdesc" id="vd-${e.id}"><div class="vhead">영상 내용</div><div class="vbody">${e.videoDesc.map(sec=>typeof sec==="string"?`<p>${esc(sec)}</p>`:`<h4>${esc(sec.h)}</h4>${paras(sec.p)}`).join("")}${e.videoNote?`<p class="vnote">${esc(e.videoNote)}</p>`:""}</div></div>`:""}
     </section>`;
   const pager = `<nav class="pager">${prev?`<a href="#c-${prev.id}">← 이전<b>${esc(prev.title)}</b></a>`:"<span></span>"}${next?`<a href="#c-${next.id}" style="text-align:right">다음 →<b>${esc(next.title)}</b></a>`:""}</nav>`;
   // 정리 완료 작품: 배경·해결 → 영상 → 성과·분석
@@ -551,8 +548,6 @@ function route(keepScroll){
   if(keepScroll !== true) window.scrollTo(0,0);
 }
 function wire(root){
-  if (matchMedia("(min-width: 861px)").matches || root.classList.contains("mbox")) root.querySelectorAll(".vdesc").forEach(d => d.open = true);
-  root.querySelectorAll(".vclose").forEach(b => b.addEventListener("click", () => { const d = b.closest("details"); d.open = false; }));
   root.querySelectorAll(".vplay").forEach(b => b.addEventListener("click", () => {
     if (b.dataset.embed.startsWith("yt:")) return mountYT(b, b.dataset.embed.slice(3));
     const f = document.createElement("iframe");
@@ -584,7 +579,7 @@ window.addEventListener("hashchange", () => { closeModal(); route(); });
   qi.addEventListener("input", () => { clearTimeout(t); t = setTimeout(go, 200); });
   qi.addEventListener("keydown", ev => { if(ev.key === "Enter"){ clearTimeout(t); go(); } if(ev.key === "Escape"){ qi.value = ""; go(); } });
 })();
-Promise.all([fetch("data/cannes2026.json?v=50521507").then(r=>r.json()), fetch("data/refs.json?v=50521507").then(r=>r.json())]).then(([a,b]) => { E = a; R = b; SIDX = null; route(); }).catch(err => { document.getElementById("app").innerHTML = `<div class="pendingbox">데이터를 불러오지 못했음. 새로고침해 보세요.</div>`; console.error(err); });
+Promise.all([fetch("data/cannes2026.json?v=6287995").then(r=>r.json()), fetch("data/refs.json?v=6287995").then(r=>r.json())]).then(([a,b]) => { E = a; R = b; SIDX = null; route(); }).catch(err => { document.getElementById("app").innerHTML = `<div class="pendingbox">데이터를 불러오지 못했음. 새로고침해 보세요.</div>`; console.error(err); });
 </script>
 
 </body>
