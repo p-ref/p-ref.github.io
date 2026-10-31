@@ -292,7 +292,7 @@ async function mountYT(btn,id){
 }
 function plate(e, big, label, url){
   const cls = (TIERS[e.tier]||{cls:"ref"}).cls;
-  const th = LIVE ? thumbOf(url||e.video) : null;
+  const th = LIVE ? (e.thumb || thumbOf(url||e.video)) : null;
   return `<div class="plate p-${cls} ${th?"has-thumb":""}">${th?`<img class="thumb" src="${esc(th)}" alt="" loading="lazy" onerror="this.parentNode.classList.remove('has-thumb');this.remove()">`:""}<span class="rings"></span>
     <span class="cat">${esc(label||e.cat||"")}</span>
     <span class="mark ${e.brand.length>26?"m-xl":e.brand.length>16?"m-l":""}">${esc(e.brand)}</span>
@@ -315,6 +315,7 @@ const fslug = f => encodeURIComponent(f);
 function refTags(x){
   const t = [];
   if(x.unverified) t.push(['확인 필요','t-check']);
+  if(!x.video) t.push(['영상 준비 중','t-check']);
   if(x.award) t.push([x.award,'t-award']);
   if(x.industry) t.push([x.industry,'']);
   if(x.year) t.push([x.year+'년','']);
@@ -371,8 +372,9 @@ function refDetail(x){
     </dl>
     ${x.sources&&x.sources.length?`<div class="sources"><span class="eyebrow">출처</span><ol>${x.sources.map(s=>`<li><a href="${esc(s[1])}" target="_blank" rel="noopener">${esc(s[0])}</a></li>`).join("")}</ol></div>`:""}
   </aside>`;
-  const em = LIVE ? embedOf(x.video) : null;
-  const media = `<section class="media ${x.videoDesc?"with-desc":""}"><div class="vids"><div class="video">${em?`<button type="button" class="vplay" data-embed="${esc(em)}" aria-label="영상 재생">${plate(x,true,"",x.video)}</button>`:`<a class="vlink" href="${esc(x.video)}" target="_blank" rel="noopener">${plate(x,true,"",x.video)}</a>`}<span class="vmeta"><b>${esc(x.videoKind||"영상")}</b><span><a href="${esc(x.video)}" target="_blank" rel="noopener">${host(x.video)}에서 보기 ↗</a></span></span></div></div>
+  const em = LIVE && x.video ? embedOf(x.video) : null;
+  const vbox = !x.video ? `<div class="vlink">${plate(x,true,"영상 준비 중","")}</div><span class="vmeta"><b>영상 준비 중</b><span>유튜브 업로드 전 · 내 폴더 원본으로 정리함</span></span>` : `${em?`<button type="button" class="vplay" data-embed="${esc(em)}" aria-label="영상 재생">${plate(x,true,"",x.video)}</button>`:`<a class="vlink" href="${esc(x.video)}" target="_blank" rel="noopener">${plate(x,true,"",x.video)}</a>`}<span class="vmeta"><b>${esc(x.videoKind||"영상")}</b><span><a href="${esc(x.video)}" target="_blank" rel="noopener">${host(x.video)}에서 보기 ↗</a></span></span>`;
+  const media = `<section class="media ${x.videoDesc?"with-desc":""}"><div class="vids"><div class="video">${vbox}</div></div>
       ${x.videoDesc?`<details class="vdesc"><summary>영상 내용</summary><div class="vbody">${x.videoDesc.map(sec=>typeof sec==="string"?`<p>${esc(sec)}</p>`:`<h4>${esc(sec.h)}</h4>${paras(sec.p)}`).join("")}${x.videoNote?`<p class="vnote">${esc(x.videoNote)}</p>`:""}<button type="button" class="vclose">접기 ▲</button></div></details>`:""}</section>`;
   const f0 = (x.folders||[])[0];
   return `<div class="crumbs"><a href="#">P.reference</a><span>›</span>${f0?`<a href="#f/${fslug(f0)}">${esc(f0)}</a><span>›</span>`:""}<span>${esc(x.title)}</span></div>
@@ -582,7 +584,7 @@ window.addEventListener("hashchange", () => { closeModal(); route(); });
   qi.addEventListener("input", () => { clearTimeout(t); t = setTimeout(go, 200); });
   qi.addEventListener("keydown", ev => { if(ev.key === "Enter"){ clearTimeout(t); go(); } if(ev.key === "Escape"){ qi.value = ""; go(); } });
 })();
-Promise.all([fetch("data/cannes2026.json?v=95850200").then(r=>r.json()), fetch("data/refs.json?v=95850200").then(r=>r.json())]).then(([a,b]) => { E = a; R = b; SIDX = null; route(); }).catch(err => { document.getElementById("app").innerHTML = `<div class="pendingbox">데이터를 불러오지 못했음. 새로고침해 보세요.</div>`; console.error(err); });
+Promise.all([fetch("data/cannes2026.json?v=42743593").then(r=>r.json()), fetch("data/refs.json?v=42743593").then(r=>r.json())]).then(([a,b]) => { E = a; R = b; SIDX = null; route(); }).catch(err => { document.getElementById("app").innerHTML = `<div class="pendingbox">데이터를 불러오지 못했음. 새로고침해 보세요.</div>`; console.error(err); });
 </script>
 
 </body>
