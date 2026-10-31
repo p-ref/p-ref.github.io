@@ -382,7 +382,7 @@ function refDetail(x){
     </article></div>${facts}</div>
     ${media}
     <div class="dgrid"><div style="min-width:0"><article>
-      <section><h2>성과</h2><div>${x.stats?`<div class="stats">${x.stats.map(s=>`<div class="stat"><b>${esc(s[0])}</b><span>${esc(s[1])}</span></div>`).join("")}</div>`:""}${paras(x.results||[])}</div></section>
+      ${(x.stats&&x.stats.length)||(x.results&&x.results.length)?`<section><h2>성과</h2><div>${x.stats?`<div class="stats">${x.stats.map(s=>`<div class="stat"><b>${esc(s[0])}</b><span>${esc(s[1])}</span></div>`).join("")}</div>`:""}${paras(x.results||[])}</div></section>`:""}
       ${x.analysis&&x.analysis.length?`<section><h2>분석</h2><div>${paras(x.analysis)}</div></section>`:""}
     </article></div><div></div></div>`;
 }
@@ -579,7 +579,7 @@ window.addEventListener("hashchange", () => { closeModal(); route(); });
   qi.addEventListener("input", () => { clearTimeout(t); t = setTimeout(go, 200); });
   qi.addEventListener("keydown", ev => { if(ev.key === "Enter"){ clearTimeout(t); go(); } if(ev.key === "Escape"){ qi.value = ""; go(); } });
 })();
-Promise.all([fetch("data/cannes2026.json?v=6287995").then(r=>r.json()), fetch("data/refs.json?v=6287995").then(r=>r.json())]).then(([a,b]) => { E = a; R = b; SIDX = null; route(); }).catch(err => { document.getElementById("app").innerHTML = `<div class="pendingbox">데이터를 불러오지 못했음. 새로고침해 보세요.</div>`; console.error(err); });
+Promise.all([fetch("data/cannes2026.json?v=77767219").then(r=>r.json()), fetch("data/refs.json?v=77767219").then(r=>r.json())]).then(([a,b]) => { E = a; R = b; SIDX = null; route(); }).catch(err => { document.getElementById("app").innerHTML = `<div class="pendingbox">데이터를 불러오지 못했음. 새로고침해 보세요.</div>`; console.error(err); });
 </script>
 
 </body>
