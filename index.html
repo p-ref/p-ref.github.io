@@ -173,7 +173,7 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:
 .yt-seek{flex:1;min-width:0;accent-color:#fff;height:4px;cursor:pointer}
 .yt-time{color:#ddd;font:12px/1 ui-monospace,monospace;white-space:nowrap}
 .vplay{all:unset;display:block;cursor:pointer;border-radius:5px}
-.spane{display:grid;gap:8px;min-width:0}.spane[hidden]{display:none}.stabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.stab{all:unset;cursor:pointer;font-size:13px;padding:4px 10px;border:1px solid var(--line);border-radius:999px;color:var(--muted)}.stab.on{background:var(--ink);color:var(--surface);border-color:var(--ink)}.stab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.spane{display:grid;gap:8px;min-width:0}.spane[hidden]{display:none}.stabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.stabh{width:100%;font-size:12px;color:var(--muted);margin-bottom:2px}.stab{all:unset;cursor:pointer;text-decoration:none;font-size:13px;padding:4px 10px;border:1px solid var(--line);border-radius:999px;color:var(--muted)}.stab.on{background:var(--ink);color:var(--surface);border-color:var(--ink)}.stab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .vplay:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .vlink{display:block;text-decoration:none}
 .vframe{width:100%;aspect-ratio:16/9;border:0;border-radius:5px;background:#000;display:block}
@@ -388,7 +388,7 @@ function refDetail(x){
   const vbox = !x.video ? `<div class="vlink">${plate(x,true,"영상 준비 중","")}</div><span class="vmeta"><b>영상 준비 중</b><span>유튜브 업로드 전 · 내 폴더 원본으로 정리함</span></span>` : `${em?`<button type="button" class="vplay" data-embed="${esc(em)}" aria-label="영상 재생">${plate(x,true,"",x.video)}</button>`:`<a class="vlink" href="${esc(x.video)}" target="_blank" rel="noopener">${plate(x,true,"",x.video)}</a>`}<span class="vmeta"><b>${esc(x.videoKind||"영상")}</b><span><a href="${esc(x.video)}" target="_blank" rel="noopener">${host(x.video)}에서 보기 ↗</a></span></span>`;
   return vbox; };
   const SER = x.series && x.series.length>1 ? x.series : null;
-  const vmain = SER ? `<div class="stabs" role="tablist">${SER.map((m,i)=>`<button type="button" class="stab${i?"":" on"}" data-si="${i}">${esc(m.title)}</button>`).join("")}</div>${SER.map((m,i)=>`<div class="spane"${i?" hidden":""}>${vboxOf({...x, video:m.video||"", thumb:m.thumb===undefined?x.thumb:m.thumb, videoKind:m.kind||x.videoKind})}</div>`).join("")}` : vboxOf(x);
+  const vmain = (SER ? `<div class="stabs" role="tablist" aria-label="${esc(x.seriesTitle||"시리즈")}"><span class="stabh">${esc(x.seriesTitle||"시리즈")} · ${SER.length}편</span>${SER.map(m=>`<a class="stab${m.id===x.id?" on":""}" href="#r-${m.id}" data-sib="${m.id}"${m.id===x.id?' aria-current="page"':""}>${esc(m.title)}</a>`).join("")}</div>` : "") + vboxOf(x);
   const media = `<section class="media ${x.videoDesc?"with-desc":""}"><div class="vids"><div class="video">${vmain}</div></div>
       ${x.videoDesc?`<div class="vdesc"><div class="vhead">영상 내용</div><div class="vbody">${x.videoDesc.map(sec=>typeof sec==="string"?`<p>${esc(sec)}</p>`:`<h4>${esc(sec.h)}</h4>${paras(sec.p)}`).join("")}${x.videoNote?`<p class="vnote">${esc(x.videoNote)}</p>`:""}</div></div>`:""}</section>`;
   const f0 = (x.folders||[])[0];
@@ -572,10 +572,9 @@ function route(keepScroll){
   if(keepScroll !== true) window.scrollTo(0,0);
 }
 function wire(root){
-  root.querySelectorAll(".spane").forEach(p => { if(!p.dataset.html) p.dataset.html = p.innerHTML; });
-  root.querySelectorAll(".stab").forEach(b => b.addEventListener("click", () => {
-    const box = b.closest(".video"); box.querySelectorAll(".stab").forEach(t => t.classList.toggle("on", t===b));
-    box.querySelectorAll(".spane").forEach((p,i) => { const hide = i != b.dataset.si; if(hide && !p.hidden && p.querySelector("iframe,.yt")){ p.innerHTML = p.dataset.html; wire(p); } p.hidden = hide; });
+  root.querySelectorAll(".stab[data-sib]").forEach(b => b.addEventListener("click", ev => {
+    if(b.classList.contains("on")){ ev.preventDefault(); return; }
+    if(b.closest(".mbox")){ ev.preventDefault(); openModal("r", b.dataset.sib); }
   }));
   root.querySelectorAll(".vplay").forEach(b => b.addEventListener("click", () => {
     if (b.dataset.embed.startsWith("yt:")) return mountYT(b, b.dataset.embed.slice(3));
@@ -608,7 +607,7 @@ window.addEventListener("hashchange", () => { closeModal(); route(); });
   qi.addEventListener("input", () => { clearTimeout(t); t = setTimeout(go, 200); });
   qi.addEventListener("keydown", ev => { if(ev.key === "Enter"){ clearTimeout(t); go(); } if(ev.key === "Escape"){ qi.value = ""; go(); } });
 })();
-Promise.all([fetch("data/cannes2026.json?v=19972308").then(r=>r.json()), fetch("data/refs.json?v=19972308").then(r=>r.json())]).then(([a,b]) => { E = a; R = b; SIDX = null; route(); }).catch(err => { document.getElementById("app").innerHTML = `<div class="pendingbox">데이터를 불러오지 못했음. 새로고침해 보세요.</div>`; console.error(err); });
+Promise.all([fetch("data/cannes2026.json?v=5944508").then(r=>r.json()), fetch("data/refs.json?v=5944508").then(r=>r.json())]).then(([a,b]) => { E = a; R = b; SIDX = null; route(); }).catch(err => { document.getElementById("app").innerHTML = `<div class="pendingbox">데이터를 불러오지 못했음. 새로고침해 보세요.</div>`; console.error(err); });
 </script>
 
 </body>
