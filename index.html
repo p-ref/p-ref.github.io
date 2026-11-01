@@ -119,6 +119,17 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:
 .pages .cur{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:600}
 .pages .off{opacity:.35}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:26px 18px}
+.cards.six{grid-template-columns:repeat(6,minmax(0,1fr));gap:22px 14px}
+.cards.six .ttl{font-size:14px}
+.cards.six .tag{font-size:10px;padding:3px 6px}
+.cards.six .memo{font-size:12px}
+.cards.six .plate .mark{font-size:13px}
+@media (max-width:1000px){.cards.six{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:700px){.cards.six{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:480px){.cards.six{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.backbtn{display:inline-flex;align-items:center;gap:4px;margin:0 0 14px -6px;padding:6px 12px 6px 8px;font:inherit;font-size:13px;font-weight:600;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:999px;cursor:pointer}
+.backbtn:hover{color:var(--ink);border-color:var(--ink)}
+@media (min-width:1230px){.backbtn{position:fixed;top:92px;left:calc(50% - 540px - 76px);margin:0;flex-direction:column;gap:2px;width:56px;height:56px;padding:0;justify-content:center;border-radius:50%;font-size:10.5px;box-shadow:0 2px 10px rgba(0,0,0,.06);z-index:20}}
 .card{text-decoration:none;display:grid;gap:10px;min-width:0;align-content:start}
 .card .ttl{font-weight:600;font-size:16px;line-height:1.4}
 .card .sub{font-size:13px;color:var(--muted);line-height:1.5}
@@ -353,7 +364,7 @@ function folderPage(f, page){
   if(pages > 1){ nav = `<nav class="pages">`; for(let n=1;n<=pages;n++) nav += `<a href="#f/${fslug(f)}/${n}" class="${n===pg?"cur":""}">${n}</a>`; nav += `</nav>`; }
   return `<div class="crumbs"><a href="#">P.reference</a><span>›</span><span>${esc(f)}</span></div>
     <div class="listhead"><div><span class="eyebrow">Folder</span><h1>${esc(f)}</h1></div><span class="count">${list.length}편</span></div>
-    ${list.length ? `<div class="cards">${list.slice((pg-1)*PERF, pg*PERF).map(refCard).join("")}</div>${nav}` : `<div class="pendingbox">아직 정리된 영상이 없음. 유튜브에 올라오는 대로 하나씩 확인해서 추가할 예정임.</div>`}`;
+    ${list.length ? `<div class="cards six">${list.slice((pg-1)*PERF, pg*PERF).map(refCard).join("")}</div>${nav}` : `<div class="pendingbox">아직 정리된 영상이 없음. 유튜브에 올라오는 대로 하나씩 확인해서 추가할 예정임.</div>`}`;
 }
 function refDetail(x){
   const sec = (h, arr) => arr && arr.length ? `<section><h2>${h}</h2><div>${arr.map(p => typeof p==="string" ? `<p>${esc(p)}</p>` : `<p><b>${esc(p[0])}:</b> ${esc(p[1])}</p>`).join("")}</div></section>` : "";
@@ -523,6 +534,8 @@ function searchPage(q){
     ${hits.length ? `<div class="cards">${cards}</div>` : `<div class="pendingbox">일치하는 영상이 없음. 다른 단어로 찾아보세요.</div>`}`;
 }
 
+let navCount = -1;
+window.addEventListener("hashchange", () => { navCount++; });
 function route(keepScroll){
   const r = location.hash.replace("#","");
   const app = document.getElementById("app");
@@ -540,7 +553,11 @@ function route(keepScroll){
   else if(rk === "f" && rp) html = folderPage(decodeURIComponent(rp), parseInt(r.split("/")[2])||1);
   else if(rk === "cannes") html = cannesHome();
   else html = folderHome();
-  app.innerHTML = html;
+  const parent = r.startsWith("r-") ? (()=>{const x=R.find(x=>"r-"+x.id===r); return x&&x.folders&&x.folders[0] ? "#f/"+fslug(x.folders[0]) : "#";})()
+    : r.startsWith("c-") ? "#"+(ctx||"cannes") : TIERS[rk] ? "#cannes" : "#";
+  app.innerHTML = (r ? `<button type="button" class="backbtn" aria-label="뒤로가기" data-parent="${parent}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg><span>뒤로</span></button>` : "") + html;
+  const bb = app.querySelector(".backbtn");
+  if(bb) bb.addEventListener("click", () => { if(navCount > 0) history.back(); else location.hash = bb.dataset.parent; });
   renderNav(rk);
   wire(app);
   
@@ -579,7 +596,7 @@ window.addEventListener("hashchange", () => { closeModal(); route(); });
   qi.addEventListener("input", () => { clearTimeout(t); t = setTimeout(go, 200); });
   qi.addEventListener("keydown", ev => { if(ev.key === "Enter"){ clearTimeout(t); go(); } if(ev.key === "Escape"){ qi.value = ""; go(); } });
 })();
-Promise.all([fetch("data/cannes2026.json?v=77767219").then(r=>r.json()), fetch("data/refs.json?v=77767219").then(r=>r.json())]).then(([a,b]) => { E = a; R = b; SIDX = null; route(); }).catch(err => { document.getElementById("app").innerHTML = `<div class="pendingbox">데이터를 불러오지 못했음. 새로고침해 보세요.</div>`; console.error(err); });
+Promise.all([fetch("data/cannes2026.json?v=14689594").then(r=>r.json()), fetch("data/refs.json?v=14689594").then(r=>r.json())]).then(([a,b]) => { E = a; R = b; SIDX = null; route(); }).catch(err => { document.getElementById("app").innerHTML = `<div class="pendingbox">데이터를 불러오지 못했음. 새로고침해 보세요.</div>`; console.error(err); });
 </script>
 
 </body>
