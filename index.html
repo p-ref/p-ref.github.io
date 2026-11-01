@@ -121,7 +121,9 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:26px 18px}
 .cards.six{grid-template-columns:repeat(6,minmax(0,1fr));gap:22px 14px}
 .cards.six .ttl{font-size:14px}
-.cards.six .tag{font-size:10px;padding:3px 6px}
+.cards.six .tag{font-size:10px;padding:3px 6px;white-space:normal;line-height:1.25;max-width:100%}
+.cards .card{min-width:0}
+.chk{color:#b42318;font-weight:600;font-size:.9em}
 .cards.six .memo{font-size:12px}
 .cards.six .plate .mark{font-size:13px}
 @media (max-width:1000px){.cards.six{grid-template-columns:repeat(4,minmax(0,1fr))}}
@@ -323,7 +325,6 @@ const FICON = (c1,c2) => `<svg viewBox="0 0 34 28" aria-hidden="true"><path d="M
 const fslug = f => encodeURIComponent(f);
 function refTags(x){
   const t = [];
-  if(x.unverified) t.push(['확인 필요','t-check']);
   if(!x.video) t.push(['영상 준비 중','t-check']);
   if(x.award) t.push([x.award,'t-award']);
   if(x.industry) t.push([x.industry,'']);
@@ -359,7 +360,7 @@ function folderHome(){
 }
 function folderPage(f, page){
   const list = R.filter(x => (x.folders||[]).includes(f));
-  const PERF = 24, pages = Math.max(1, Math.ceil(list.length/PERF)), pg = Math.min(Math.max(1,page||1), pages);
+  const PERF = 100000, pages = Math.max(1, Math.ceil(list.length/PERF)), pg = Math.min(Math.max(1,page||1), pages);
   let nav = "";
   if(pages > 1){ nav = `<nav class="pages">`; for(let n=1;n<=pages;n++) nav += `<a href="#f/${fslug(f)}/${n}" class="${n===pg?"cur":""}">${n}</a>`; nav += `</nav>`; }
   return `<div class="crumbs"><a href="#">P.reference</a><span>›</span><span>${esc(f)}</span></div>
@@ -368,15 +369,17 @@ function folderPage(f, page){
 }
 function refDetail(x){
   const sec = (h, arr) => arr && arr.length ? `<section><h2>${h}</h2><div>${arr.map(p => typeof p==="string" ? `<p>${esc(p)}</p>` : `<p><b>${esc(p[0])}:</b> ${esc(p[1])}</p>`).join("")}</div></section>` : "";
+  const ck = x.chk||{};
+  const fr = (lab,k,v) => (v||ck[k]) ? `<div><dt>${lab}</dt><dd>${ck[k]?`<span class="chk">(확인 필요)</span> `:""}${esc(v||"")}${ck[k]&&ck[k]!==true?`<small class="bdesc">${esc(ck[k])}</small>`:""}</dd></div>` : "";
   const facts = `<aside class="facts"><dl>
       <div><dt>브랜드</dt><dd>${esc(x.brand)}${x.bdesc?`<small class="bdesc">${esc(x.bdesc)}</small>`:""}</dd></div>
-      <div><dt>캠페인</dt><dd>${esc(x.campaign||x.title)}</dd></div>
-      ${x.year?`<div><dt>온에어</dt><dd>${esc(x.year)}년</dd></div>`:""}
-      ${x.agency?`<div><dt>대행사</dt><dd>${esc(x.agency)}</dd></div>`:""}
-      ${x.director?`<div><dt>감독</dt><dd>${esc(x.director)}</dd></div>`:""}
-      ${x.country?`<div><dt>국가</dt><dd>${esc(x.country)}</dd></div>`:""}
-      ${x.award?`<div><dt>수상</dt><dd>${esc(x.awardFull||x.award)}</dd></div>`:""}
-      ${x.industry?`<div><dt>업종</dt><dd>${esc(x.industry)}</dd></div>`:""}
+      ${fr("캠페인","campaign",x.campaign||x.title)}
+      ${fr("온에어","year",x.year?x.year+"년":"")}
+      ${fr("대행사","agency",x.agency)}
+      ${fr("감독","director",x.director)}
+      ${fr("국가","country",x.country)}
+      ${fr("수상","award",x.awardFull||x.award)}
+      ${fr("업종","industry",x.industry)}
     </dl>
     ${x.sources&&x.sources.length?`<div class="sources"><span class="eyebrow">출처</span><ol>${x.sources.map(s=>`<li><a href="${esc(s[1])}" target="_blank" rel="noopener">${esc(s[0])}</a></li>`).join("")}</ol></div>`:""}
   </aside>`;
@@ -596,7 +599,7 @@ window.addEventListener("hashchange", () => { closeModal(); route(); });
   qi.addEventListener("input", () => { clearTimeout(t); t = setTimeout(go, 200); });
   qi.addEventListener("keydown", ev => { if(ev.key === "Enter"){ clearTimeout(t); go(); } if(ev.key === "Escape"){ qi.value = ""; go(); } });
 })();
-Promise.all([fetch("data/cannes2026.json?v=87834450").then(r=>r.json()), fetch("data/refs.json?v=87834450").then(r=>r.json())]).then(([a,b]) => { E = a; R = b; SIDX = null; route(); }).catch(err => { document.getElementById("app").innerHTML = `<div class="pendingbox">데이터를 불러오지 못했음. 새로고침해 보세요.</div>`; console.error(err); });
+Promise.all([fetch("data/cannes2026.json?v=36662975").then(r=>r.json()), fetch("data/refs.json?v=36662975").then(r=>r.json())]).then(([a,b]) => { E = a; R = b; SIDX = null; route(); }).catch(err => { document.getElementById("app").innerHTML = `<div class="pendingbox">데이터를 불러오지 못했음. 새로고침해 보세요.</div>`; console.error(err); });
 </script>
 
 </body>
