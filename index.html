@@ -353,7 +353,7 @@ function folderHome(){
   const cnt = {}; R.forEach(x => (x.folders||[]).forEach(f => cnt[f]=(cnt[f]||0)+1));
   const can = `<a class="folder feature" href="#cannes">${FICON("#1E2740","#2E3A5C")}<span><span class="fn">2026 칸 라이언즈</span><span class="fc">${E.length}편 · 그랑프리·골드·실버·브론즈</span></span></a>`;
   const fs = FOLDERS.map(f => `<a class="folder ${cnt[f]?"":"empty"}" href="#f/${fslug(f)}">${FICON("#E8B64C","#F4CE6A")}<span><span class="fn">${esc(f)}</span><span class="fc">${cnt[f]||0}편</span></span></a>`).join("");
-  return `<section class="hero" style="padding-bottom:10px"><span class="eyebrow">P.reference · 광고 레퍼런스 아카이브</span><h1 style="font-size:clamp(28px,4vw,40px)">레퍼런스 폴더</h1><p style="margin:8px 0 0;color:var(--muted)">내 폴더 영상 총 <b style="color:var(--ink)">${R.length}편</b> · 유튜브 연결 ${R.filter(x=>x.video).length}편</p></section>
+  return `<section class="hero" style="padding-bottom:10px"><span class="eyebrow">P.reference · 광고 레퍼런스 아카이브</span><h1 style="font-size:clamp(28px,4vw,40px)">레퍼런스 폴더</h1><p style="margin:8px 0 0;color:var(--muted)">${R.length}편</p></section>
     <div class="fgrid">${fs}</div>
     <div class="fsep"><span class="eyebrow">광고제 수상작</span></div>
     <div class="fgrid">${can}</div>`;
@@ -599,7 +599,7 @@ window.addEventListener("hashchange", () => { closeModal(); route(); });
   qi.addEventListener("input", () => { clearTimeout(t); t = setTimeout(go, 200); });
   qi.addEventListener("keydown", ev => { if(ev.key === "Enter"){ clearTimeout(t); go(); } if(ev.key === "Escape"){ qi.value = ""; go(); } });
 })();
-Promise.all([fetch("data/cannes2026.json?v=20381678").then(r=>r.json()), fetch("data/refs.json?v=20381678").then(r=>r.json())]).then(([a,b]) => { E = a; R = b; SIDX = null; route(); }).catch(err => { document.getElementById("app").innerHTML = `<div class="pendingbox">데이터를 불러오지 못했음. 새로고침해 보세요.</div>`; console.error(err); });
+Promise.all([fetch("data/cannes2026.json?v=75381197").then(r=>r.json()), fetch("data/refs.json?v=75381197").then(r=>r.json())]).then(([a,b]) => { E = a; R = b; SIDX = null; route(); }).catch(err => { document.getElementById("app").innerHTML = `<div class="pendingbox">데이터를 불러오지 못했음. 새로고침해 보세요.</div>`; console.error(err); });
 </script>
 
 </body>
