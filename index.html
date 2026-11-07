@@ -221,9 +221,17 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:
 .ask{border:1px solid var(--line);border-radius:6px;background:var(--surface);margin-bottom:10px;padding:10px 12px;transition:box-shadow .15s}
 .ask textarea{width:100%;box-sizing:border-box;border:0;outline:none;resize:none;font:inherit;font-size:14px;line-height:1.5;height:22px;transition:height .18s;background:transparent;color:inherit}
 .ask.open{box-shadow:0 2px 10px rgba(0,0,0,.08)}.ask.open textarea{height:88px}
-.ask .ask-row{display:none;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}.ask.open .ask-row{display:flex}
+.ask .ask-row{display:none;align-items:center;justify-content:space-between;gap:6px;margin-top:8px}.ask.open .ask-row{display:flex}
 .ask .ask-hint{font-size:12px;color:var(--muted)}
-.ask button{border:0;border-radius:5px;background:var(--accent);color:#fff;font:600 13px/1 var(--f-body);padding:8px 12px;cursor:pointer}
+.ask .ask-ai{display:flex;gap:4px;flex-wrap:nowrap;min-width:0}
+.ask .ask-go{white-space:nowrap;flex:none}
+.ask .ai-chip{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-size:11.5px;padding:4px 7px;white-space:nowrap;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.ask .ai-chip i{width:7px;height:7px;border-radius:50%;background:var(--c)}
+.ask .ai-chip[aria-checked="true"]{border-color:var(--c);color:var(--ink,#111);font-weight:600;background:color-mix(in srgb,var(--c) 10%,transparent)}
+.ask .ai-chip:focus-visible{outline:2px solid var(--c)}
+.ask p.ask-hint{display:none;margin:6px 0 0}.ask.open p.ask-hint{display:block}
+
+.ask .ask-go{border:0;border-radius:5px;background:var(--accent);color:#fff;font:600 13px/1 var(--f-body);padding:8px 12px;cursor:pointer}
 .vdesc{border:1px solid var(--line);border-radius:6px;background:var(--surface);margin-bottom:36px}
 .vdesc .vhead{padding:12px 18px;font-weight:600;font-size:15px}
 .vdesc .vbody{padding:0 18px 18px;border-top:1px solid var(--line);font-size:14px;line-height:1.65}
@@ -608,15 +616,19 @@ window.addEventListener("hashchange", () => { closeModal(); route(); });
 })();
 
 
-function askBox(x){ return `<form class="ask" data-brand="${esc(x.brand||"")}" data-title="${esc(x.title||"")}"><textarea rows="1" placeholder="이 영상에 대해 Claude에게 질문하기" aria-label="Claude에게 질문"></textarea><div class="ask-row"><span class="ask-hint">새 탭에서 Claude가 답해요</span><button type="submit">질문하기</button></div></form>`; }
-document.addEventListener("focusin",ev=>{ const f=ev.target.closest&&ev.target.closest(".ask"); if(f) f.classList.add("open"); });
+function askBox(x){ return `<form class="ask" data-brand="${esc(x.brand||"")}" data-title="${esc(x.title||"")}"><textarea rows="1" placeholder="이 영상에 대해 AI에게 질문하기" aria-label="AI에게 질문"></textarea><div class="ask-row"><span class="ask-ai" role="radiogroup" aria-label="질문할 AI">${AIS.map(a=>`<button type="button" class="ai-chip" data-ai="${a.k}" role="radio" style="--c:${a.c}"><i></i>${a.n}</button>`).join("")}</span><button type="submit" class="ask-go">질문</button></div><p class="ask-hint"></p></form>`; }
+const AIS=[{k:"gpt",n:"ChatGPT",c:"#10a37f",u:q=>"https://chatgpt.com/?q="+encodeURIComponent(q)},{k:"gemini",n:"Gemini",c:"#4285f4",u:()=> "https://gemini.google.com/app",paste:true},{k:"claude",n:"Claude",c:"#d97757",u:q=>"https://claude.ai/new?q="+encodeURIComponent(q)}];
+let AIPICK="gpt"; try{ AIPICK=localStorage.getItem("askAI")||"gpt"; }catch(_){}
+function syncAsk(f){ f.querySelectorAll(".ai-chip").forEach(b=>b.setAttribute("aria-checked",b.dataset.ai===AIPICK)); const a=AIS.find(a=>a.k===AIPICK); f.querySelector(".ask-hint").textContent=a.paste?"Gemini는 질문이 복사돼요. 열린 창에 붙여넣기(Ctrl+V) 하세요":`새 탭에서 ${a.n}가 답해요`; }
+document.addEventListener("focusin",ev=>{ const f=ev.target.closest&&ev.target.closest(".ask"); if(f){ f.classList.add("open"); syncAsk(f); } });
 document.addEventListener("focusout",ev=>{ const f=ev.target.closest&&ev.target.closest(".ask"); if(f) setTimeout(()=>{ if(!f.contains(document.activeElement)&&!f.querySelector("textarea").value.trim()) f.classList.remove("open"); },150); });
-document.addEventListener("keydown",ev=>{ if(ev.key==="Enter"&&!ev.shiftKey&&ev.target.matches&&ev.target.matches(".ask textarea")){ ev.preventDefault(); ev.target.form.requestSubmit(); } });
+document.addEventListener("click",ev=>{ const c=ev.target.closest&&ev.target.closest(".ai-chip"); if(!c) return; AIPICK=c.dataset.ai; try{localStorage.setItem("askAI",AIPICK);}catch(_){} document.querySelectorAll(".ask").forEach(syncAsk); c.closest(".ask").querySelector("textarea").focus(); });
+document.addEventListener("keydown",ev=>{ if(ev.key==="Enter"&&!ev.shiftKey&&!ev.isComposing&&ev.target.matches&&ev.target.matches(".ask textarea")){ ev.preventDefault(); ev.target.form.requestSubmit(); } });
 document.addEventListener("submit",ev=>{ const f=ev.target; if(!f.classList||!f.classList.contains("ask")) return; ev.preventDefault();
-  const q=f.querySelector("textarea").value.trim(); if(!q) return;
+  const q=f.querySelector("textarea").value.trim(); if(!q) return; const a=AIS.find(a=>a.k===AIPICK)||AIS[0];
   const p=`광고 레퍼런스 사이트(P.reference)에서 이 광고를 보고 있어요: "${f.dataset.brand} – ${f.dataset.title}"\n페이지: ${location.href}\n\n질문: ${q}\n\n영어나 광고 용어를 잘 모르는 사람도 이해하게 한국어로 쉽게 답해 주세요.`;
   try{ navigator.clipboard&&navigator.clipboard.writeText(p).catch(()=>{}); }catch(_){}
-  window.open("https://claude.ai/new?q="+encodeURIComponent(p),"_blank","noopener"); });
+  window.open(a.u(p),"_blank","noopener"); });
 function estText(t){
   const re=/\(추정[^)]*\)\.?/g; let out="", i=0, m;
   while((m=re.exec(t))){
@@ -630,7 +642,7 @@ function estText(t){
 }
 function estW(html){ return html.replace(/>([^<]*\(추정[^<]*)</g,(m,t)=>">"+estText(t)+"<"); }
 { const _rd=refDetail, _d=detail; refDetail=x=>estW(_rd(x)); detail=e=>estW(_d(e)); }
-Promise.all([fetch("data/cannes2026.json?v=1240098").then(r=>r.json()), fetch("data/refs.json?v=1240098").then(r=>r.json())]).then(([a,b]) => { E = a; R = b; SIDX = null; route(); }).catch(err => { document.getElementById("app").innerHTML = `<div class="pendingbox">데이터를 불러오지 못했음. 새로고침해 보세요.</div>`; console.error(err); });
+Promise.all([fetch("data/cannes2026.json?v=86523089").then(r=>r.json()), fetch("data/refs.json?v=86523089").then(r=>r.json())]).then(([a,b]) => { E = a; R = b; SIDX = null; route(); }).catch(err => { document.getElementById("app").innerHTML = `<div class="pendingbox">데이터를 불러오지 못했음. 새로고침해 보세요.</div>`; console.error(err); });
 </script>
 
 </body>
