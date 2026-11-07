@@ -156,6 +156,10 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:
 .yt-stage{position:relative;aspect-ratio:16/9;width:100%}
 .yt:fullscreen .yt-stage{aspect-ratio:auto;flex:1}
 .yt-frame{position:absolute;inset:0;overflow:hidden}
+.est{background:linear-gradient(transparent 58%,rgba(255,214,0,.35) 58%)}
+.est-tag{font-size:10.5px;font-weight:700;color:#7a5c00;background:rgba(255,214,0,.45);border-radius:3px;padding:1px 5px;margin-right:5px;vertical-align:1px}
+.est-why{color:var(--muted);font-size:.9em}
+.yt-native{position:absolute;inset:0;width:100%;height:100%;border:0}
 .yt-frame iframe{position:absolute;left:0;width:100%;top:-64px;height:calc(100% + 128px);border:0}
 .bdesc{display:block;font-size:12.5px;font-weight:400;color:var(--muted);margin-top:3px;line-height:1.45}
 .yt-poster{position:absolute;inset:0;background:#000 center/cover no-repeat;display:grid;place-items:center;transition:opacity .2s}
@@ -285,22 +289,10 @@ function embedOf(u){ const y=ytId(u); if(y) return `yt:${y}`; const v=vmId(u); i
 let ytApi=null;
 function loadYT(){ if(ytApi) return ytApi; ytApi=new Promise(res=>{ if(window.YT&&YT.Player) return res(); window.onYouTubeIframeAPIReady=()=>res(); const sc=document.createElement("script"); sc.src="https://www.youtube.com/iframe_api"; document.head.appendChild(sc); }); return ytApi; }
 const fmtT=t=>{t=Math.max(0,Math.floor(t||0)); return Math.floor(t/60)+":"+String(t%60).padStart(2,"0");};
-async function mountYT(btn,id){
-  const w=document.createElement("div"); w.className="yt"; w.innerHTML=`<div class="yt-stage"><div class="yt-frame"><div></div></div><div class="yt-poster" style="background-image:url(https://i.ytimg.com/vi/${id}/hqdefault.jpg)"><span class="yt-big"></span></div><div class="yt-hit" aria-hidden="true"></div></div><div class="yt-bar"><button type="button" class="yt-pp" aria-label="재생/일시정지"></button><input class="yt-seek" type="range" min="0" max="1000" value="0" aria-label="재생 위치"><span class="yt-time">0:00</span><button type="button" class="yt-mute" aria-label="음소거"></button><button type="button" class="yt-fs" aria-label="전체 화면"></button></div>`;
+function mountYT(btn,id){
+  const w=document.createElement("div"); w.className="yt";
+  w.innerHTML=`<div class="yt-stage"><iframe class="yt-native" src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&playsinline=1&iv_load_policy=3&cc_load_policy=0" title="YouTube 영상" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>`;
   btn.replaceWith(w);
-  await loadYT();
-  const host=w.querySelector(".yt-frame div"), pp=w.querySelector(".yt-pp"), seek=w.querySelector(".yt-seek"), time=w.querySelector(".yt-time"), mute=w.querySelector(".yt-mute");
-  let dragging=false, timer=null;
-  const pl=new YT.Player(host,{videoId:id,host:"https://www.youtube-nocookie.com",playerVars:{autoplay:1,controls:0,rel:0,iv_load_policy:3,playsinline:1,disablekb:1,cc_load_policy:0,fs:0,modestbranding:1},events:{
-    onReady:e=>{ try{pl.unloadModule("captions");}catch(_){} e.target.playVideo(); timer=setInterval(()=>{ const d=pl.getDuration?.()||0, c=pl.getCurrentTime?.()||0; if(d&&!dragging) seek.value=Math.round(c/d*1000); time.textContent=fmtT(c)+" / "+fmtT(d); },250); },
-    onStateChange:e=>{ w.classList.toggle("playing",e.data===1); if(e.data===1) w.classList.add("started"); if(e.data===0) w.classList.remove("started"); if(e.data===1){ try{pl.unloadModule("captions");}catch(_){} } if(e.data===0){ w.classList.remove("playing"); } }
-  }});
-  const toggle=()=>{ const st=pl.getPlayerState?.(); st===1?pl.pauseVideo():pl.playVideo(); };
-  w.querySelector(".yt-hit").addEventListener("click",toggle); pp.addEventListener("click",toggle);
-  seek.addEventListener("input",()=>{dragging=true;}); seek.addEventListener("change",()=>{ const d=pl.getDuration()||0; pl.seekTo(seek.value/1000*d,true); dragging=false; });
-  mute.addEventListener("click",()=>{ if(pl.isMuted()){pl.unMute();w.classList.remove("muted");}else{pl.mute();w.classList.add("muted");} });
-  w.querySelector(".yt-fs").addEventListener("click",()=>{ document.fullscreenElement?document.exitFullscreen():(w.requestFullscreen||w.webkitRequestFullscreen).call(w); });
-  w.tabIndex=0; w.addEventListener("keydown",ev=>{ if(ev.key===" "||ev.key==="k"){ev.preventDefault();toggle();} });
 }
 function plate(e, big, label, url){
   const cls = (TIERS[e.tier]||{cls:"ref"}).cls;
@@ -607,7 +599,21 @@ window.addEventListener("hashchange", () => { closeModal(); route(); });
   qi.addEventListener("input", () => { clearTimeout(t); t = setTimeout(go, 200); });
   qi.addEventListener("keydown", ev => { if(ev.key === "Enter"){ clearTimeout(t); go(); } if(ev.key === "Escape"){ qi.value = ""; go(); } });
 })();
-Promise.all([fetch("data/cannes2026.json?v=56098706").then(r=>r.json()), fetch("data/refs.json?v=56098706").then(r=>r.json())]).then(([a,b]) => { E = a; R = b; SIDX = null; route(); }).catch(err => { document.getElementById("app").innerHTML = `<div class="pendingbox">데이터를 불러오지 못했음. 새로고침해 보세요.</div>`; console.error(err); });
+
+function estText(t){
+  const re=/\(추정[^)]*\)\.?/g; let out="", i=0, m;
+  while((m=re.exec(t))){
+    const seg=t.slice(i,m.index); let st=0;
+    const lab=seg.match(/^[^:：.]{1,30}[:：]\s+/); if(lab) st=lab[0].length;
+    const bre=/[.!?。][”"’']?\s+/g; let b; while((b=bre.exec(seg))){ if(b.index+b[0].length<seg.length) st=Math.max(st,b.index+b[0].length); }
+    out+=seg.slice(0,st)+`<span class="est"><b class="est-tag">추정</b>${seg.slice(st).replace(/\s+$/,"")}</span> <span class="est-why">${m[0]}</span>`;
+    i=m.index+m[0].length;
+  }
+  return out+t.slice(i);
+}
+function estW(html){ return html.replace(/>([^<]*\(추정[^<]*)</g,(m,t)=>">"+estText(t)+"<"); }
+{ const _rd=refDetail, _d=detail; refDetail=x=>estW(_rd(x)); detail=e=>estW(_d(e)); }
+Promise.all([fetch("data/cannes2026.json?v=64079591").then(r=>r.json()), fetch("data/refs.json?v=64079591").then(r=>r.json())]).then(([a,b]) => { E = a; R = b; SIDX = null; route(); }).catch(err => { document.getElementById("app").innerHTML = `<div class="pendingbox">데이터를 불러오지 못했음. 새로고침해 보세요.</div>`; console.error(err); });
 </script>
 
 </body>
