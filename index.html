@@ -613,7 +613,7 @@ function estText(t){
 }
 function estW(html){ return html.replace(/>([^<]*\(추정[^<]*)</g,(m,t)=>">"+estText(t)+"<"); }
 { const _rd=refDetail, _d=detail; refDetail=x=>estW(_rd(x)); detail=e=>estW(_d(e)); }
-Promise.all([fetch("data/cannes2026.json?v=14234957").then(r=>r.json()), fetch("data/refs.json?v=14234957").then(r=>r.json())]).then(([a,b]) => { E = a; R = b; SIDX = null; route(); }).catch(err => { document.getElementById("app").innerHTML = `<div class="pendingbox">데이터를 불러오지 못했음. 새로고침해 보세요.</div>`; console.error(err); });
+Promise.all([fetch("data/cannes2026.json?v=35412969").then(r=>r.json()), fetch("data/refs.json?v=35412969").then(r=>r.json())]).then(([a,b]) => { E = a; R = b; SIDX = null; route(); }).catch(err => { document.getElementById("app").innerHTML = `<div class="pendingbox">데이터를 불러오지 못했음. 새로고침해 보세요.</div>`; console.error(err); });
 </script>
 
 </body>
