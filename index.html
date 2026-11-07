@@ -218,6 +218,20 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:
 .video .plate .play{width:56px;height:56px;right:22px;bottom:22px}
 .video .plate .play::after{border-left-width:14px;border-top-width:9px;border-bottom-width:9px}
 .vcap{font-size:13px;color:var(--muted);margin:0 0 20px}
+.editbtn{all:unset;cursor:pointer;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:var(--muted);margin-left:8px;flex:none}
+.editbtn:hover{background:var(--line)}.editbtn[aria-pressed="true"]{background:var(--accent);color:#fff}
+.ebk{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:grid;place-items:center;padding:16px}
+.ebox{background:var(--surface);border-radius:10px;padding:22px;width:min(640px,100%);max-height:88vh;overflow:auto;position:relative}
+.ebox h3{margin:0 0 6px;font-size:18px}.ebox .ehelp{margin:0 0 12px;color:var(--muted);font-size:13px}
+.ebox label{display:block;font-size:13px;font-weight:600;margin:10px 0 0}
+.ebox input:not([type=checkbox]),.ebox textarea{display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font:inherit;font-size:14px;font-weight:400;background:transparent;color:inherit}
+.ebox fieldset{border:1px solid var(--line);border-radius:6px;margin:12px 0 0;padding:8px 10px}.ebox legend{font-size:13px;font-weight:600}
+.efolders{display:flex;flex-wrap:wrap;gap:4px 12px;max-height:140px;overflow:auto}.efolders label{font-weight:400;margin:0;display:flex;gap:4px;align-items:center}
+.ebox .eerr{color:#c0392b;font-size:13px;min-height:1em;margin:10px 0 0}
+.ebox .esave{border:0;border-radius:6px;background:var(--accent);color:#fff;font:600 14px/1 var(--f-body);padding:10px 16px;cursor:pointer;margin-top:8px}
+.eclose{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:var(--surface);font-size:18px;cursor:pointer}
+.eopen{border:1px dashed var(--accent);background:transparent;color:var(--accent);border-radius:6px;padding:6px 12px;font:600 13px/1 var(--f-body);cursor:pointer;margin:0 0 12px}
+.etoast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:8px;font-size:14px;z-index:60}
 .ask{border:1px solid var(--line);border-radius:6px;background:var(--surface);margin-bottom:10px;padding:10px 12px;transition:box-shadow .15s}
 .ask textarea{width:100%;box-sizing:border-box;border:0;outline:none;resize:none;font:inherit;font-size:14px;line-height:1.5;height:22px;transition:height .18s;background:transparent;color:inherit}
 .ask.open{box-shadow:0 2px 10px rgba(0,0,0,.08)}.ask.open textarea{height:88px}
@@ -642,7 +656,71 @@ function estText(t){
 }
 function estW(html){ return html.replace(/>([^<]*\(추정[^<]*)</g,(m,t)=>">"+estText(t)+"<"); }
 { const _rd=refDetail, _d=detail; refDetail=x=>estW(_rd(x)); detail=e=>estW(_d(e)); }
-Promise.all([fetch("data/cannes2026.json?v=86523089").then(r=>r.json()), fetch("data/refs.json?v=86523089").then(r=>r.json())]).then(([a,b]) => { E = a; R = b; SIDX = null; route(); }).catch(err => { document.getElementById("app").innerHTML = `<div class="pendingbox">데이터를 불러오지 못했음. 새로고침해 보세요.</div>`; console.error(err); });
+/* ===== Edit 모드 ===== */
+const GH={owner:"ypreference",repo:"cannes-archive",branch:"main"};
+let EDITS={refs:{},cannes:{}}, GHTOKEN=null;
+const b64e=s=>{const b=new TextEncoder().encode(s);let t="";for(let i=0;i<b.length;i+=8192)t+=String.fromCharCode.apply(null,b.subarray(i,i+8192));return btoa(t);};
+const b64d=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\n/g,"")),c=>c.charCodeAt(0)));
+const u8b=a=>btoa(String.fromCharCode(...a)), bu8=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+async function pwKey(pw,salt){ const k=await crypto.subtle.importKey("raw",new TextEncoder().encode(pw),"PBKDF2",false,["deriveKey"]); return crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:150000,hash:"SHA-256"},k,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]); }
+async function ghGet(path){ const r=await fetch(`https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${path}?ref=${GH.branch}&t=${Date.now()}`,{headers:GHTOKEN?{Authorization:"Bearer "+GHTOKEN,Accept:"application/vnd.github+json"}:{}}); if(r.status===404) return null; if(!r.ok) throw new Error("GitHub 읽기 실패 ("+r.status+")"); return r.json(); }
+async function ghPut(path,text,sha,msg,token){ const r=await fetch(`https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${path}`,{method:"PUT",headers:{Authorization:"Bearer "+(token||GHTOKEN),Accept:"application/vnd.github+json"},body:JSON.stringify({message:msg,content:b64e(text),branch:GH.branch,...(sha?{sha}:{})})}); if(!r.ok){ const t=await r.text(); throw new Error("GitHub 저장 실패 ("+r.status+") "+t.slice(0,120)); } return r.json(); }
+function applyEdits(){
+  Object.entries(EDITS.refs||{}).forEach(([id,p])=>{ const x=R.find(x=>x.id===id); if(x) Object.assign(x,p); else if(p._new) R.push(Object.assign({id},p)); });
+  Object.entries(EDITS.cannes||{}).forEach(([id,p])=>{ const e=E.find(e=>e.id===id); if(e) Object.assign(e,p); });
+  SIDX=null;
+}
+function emodal(html){ const bk=document.createElement("div"); bk.className="ebk"; bk.innerHTML=`<div class="ebox" role="dialog" aria-modal="true"><button type="button" class="eclose" aria-label="닫기">×</button>${html}</div>`; document.body.appendChild(bk); const close=()=>bk.remove(); bk.querySelector(".eclose").onclick=close; bk.addEventListener("mousedown",ev=>{ if(ev.target===bk) close(); }); return {bk,close}; }
+function setEditOn(on){ document.body.classList.toggle("editing",on); const b=document.getElementById("editbtn"); if(b){ b.setAttribute("aria-pressed",on); b.title=on?"수정 모드 켜짐 (누르면 끄기)":"수정 모드"; } route(true); }
+async function openEditGate(){
+  if(GHTOKEN){ GHTOKEN=null; try{sessionStorage.removeItem("ghk");}catch(_){} setEditOn(false); return; }
+  let key=null; try{ const r=await fetch("data/ekey.json?t="+Date.now()); if(r.ok) key=await r.json(); }catch(_){}
+  if(!key){ // 처음 설정
+    const m=emodal(`<h3>수정 모드 처음 설정</h3><p class="ehelp">한 번만 하면 돼요. GitHub에서 만든 수정 권한 키와, 앞으로 쓸 비밀번호를 넣어 주세요.</p><label>GitHub 키<input type="password" id="e-tok" autocomplete="off"></label><label>새 비밀번호<input type="password" id="e-pw1" autocomplete="new-password"></label><label>비밀번호 확인<input type="password" id="e-pw2" autocomplete="new-password"></label><p class="eerr"></p><button type="button" class="esave">설정 완료</button>`);
+    m.bk.querySelector(".esave").onclick=async()=>{ const tok=m.bk.querySelector("#e-tok").value.trim(), p1=m.bk.querySelector("#e-pw1").value, p2=m.bk.querySelector("#e-pw2").value, er=m.bk.querySelector(".eerr");
+      if(!tok||!p1){ er.textContent="키와 비밀번호를 모두 넣어 주세요."; return; } if(p1!==p2){ er.textContent="비밀번호가 서로 달라요."; return; }
+      try{ er.textContent="저장 중…"; const salt=crypto.getRandomValues(new Uint8Array(16)), iv=crypto.getRandomValues(new Uint8Array(12)); const ct=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv},await pwKey(p1,salt),new TextEncoder().encode(tok)));
+        await ghPut("data/ekey.json",JSON.stringify({salt:u8b(salt),iv:u8b(iv),ct:u8b(ct)}),null,"수정 모드 설정",tok);
+        GHTOKEN=tok; try{sessionStorage.setItem("ghk",tok);}catch(_){} m.close(); setEditOn(true);
+      }catch(e){ er.textContent=e.message.includes("401")||e.message.includes("403")?"GitHub 키가 맞지 않거나 권한이 부족해요.":e.message; } };
+    return;
+  }
+  const m=emodal(`<h3>수정 모드</h3><label>비밀번호<input type="password" id="e-pw" autocomplete="current-password"></label><p class="eerr"></p><button type="button" class="esave">들어가기</button>`);
+  const go=async()=>{ const er=m.bk.querySelector(".eerr"); try{ const pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:bu8(key.iv)},await pwKey(m.bk.querySelector("#e-pw").value,bu8(key.salt)),bu8(key.ct)); GHTOKEN=new TextDecoder().decode(pt); try{sessionStorage.setItem("ghk",GHTOKEN);}catch(_){} m.close(); setEditOn(true); }catch(_){ er.textContent="비밀번호가 틀렸어요."; } };
+  m.bk.querySelector(".esave").onclick=go; const pi=m.bk.querySelector("#e-pw"); pi.focus(); pi.addEventListener("keydown",ev=>{ if(ev.key==="Enter") go(); });
+}
+const EFIELDS=[["title","제목","line"],["brand","브랜드","line"],["ko","한 줄 요약","area"],["memo","내 메모·태그","line"],["video","유튜브 링크","line"],["bg","배경 및 문제","list"],["solIntro","해결","list"],["sol","해결 포인트 (한 줄에 하나)","lines"],["results","성과","list"],["analysis","분석","list"]];
+function openEditor(kind,x){
+  const isNew=!x; x=x||{folders:[]};
+  const val=(k,t)=>{ const v=x[k]; if(t==="list") return (v||[]).map(p=>typeof p==="string"?p:p.join(": ")).join("\n\n"); if(t==="lines") return (v||[]).join("\n"); return v||""; };
+  const fl=kind==="refs"||isNew ? `<fieldset><legend>폴더</legend><div class="efolders">${FOLDERS.map(f=>`<label><input type="checkbox" value="${esc(f)}" ${(x.folders||[]).includes(f)?"checked":""}>${esc(f)}</label>`).join("")}</div></fieldset>` : "";
+  const m=emodal(`<h3>${isNew?"새 항목 추가":"항목 수정"}</h3><p class="ehelp">문단은 빈 줄로 구분해요.</p>${EFIELDS.filter(f=>!(kind==="cannes"&&f[0]==="memo")).map(([k,lab,t])=>`<label>${lab}${t==="line"?`<input data-k="${k}" data-t="${t}" value="${esc(val(k,t))}">`:`<textarea data-k="${k}" data-t="${t}" rows="${t==="area"?2:4}">${esc(val(k,t))}</textarea>`}</label>`).join("")}${fl}<p class="eerr"></p><button type="button" class="esave">저장</button>`);
+  m.bk.querySelector(".esave").onclick=async()=>{ const er=m.bk.querySelector(".eerr"); const p={};
+    m.bk.querySelectorAll("[data-k]").forEach(el=>{ const t=el.dataset.t, v=el.value.trim(); p[el.dataset.k]= t==="list"?v.split(/\n\s*\n/).map(s=>s.trim()).filter(Boolean) : t==="lines"?v.split("\n").map(s=>s.trim()).filter(Boolean) : v; });
+    const fs=[...m.bk.querySelectorAll(".efolders input:checked")].map(i=>i.value); if(fl) p.folders=fs;
+    if(!p.title){ er.textContent="제목은 꼭 넣어 주세요."; return; }
+    let id=x.id; if(isNew){ id="u-"+Date.now().toString(36); Object.assign(p,{_new:true,thumb:"",noVideo:!p.video,industry:"",country:""}); if(!p.brand) p.brand=p.title; }
+    if(p.video) p.noVideo=false;
+    try{ er.textContent="저장 중…"; const cur=await ghGet("data/edits.json"); const data=cur?JSON.parse(b64d(cur.content)):{refs:{},cannes:{}};
+      data[kind]=data[kind]||{}; data[kind][id]=Object.assign(data[kind][id]||{},p);
+      await ghPut("data/edits.json",JSON.stringify(data,null,1),cur&&cur.sha,(isNew?"추가: ":"수정: ")+p.title);
+      EDITS=data; applyEdits(); m.close(); if(isNew) location.hash="#r-"+id; else route(true);
+      etoast("저장했어요. 다른 기기에서는 1~2분 뒤에 보여요.");
+    }catch(e){ er.textContent=e.message; } };
+}
+function etoast(t){ const d=document.createElement("div"); d.className="etoast"; d.textContent=t; document.body.appendChild(d); setTimeout(()=>d.remove(),3500); }
+function decorateEdit(){
+  if(!GHTOKEN) return; const r=location.hash.replace("#",""), app=document.getElementById("app");
+  const h=app.querySelector("header.dhead");
+  if(h&&(r.startsWith("r-")||r.startsWith("c-"))){ const kind=r.startsWith("r-")?"refs":"cannes", id=r.slice(2), x=(kind==="refs"?R:E).find(x=>x.id===id); if(x){ const b=document.createElement("button"); b.type="button"; b.className="eopen"; b.textContent="✎ 이 항목 수정"; b.onclick=()=>openEditor(kind,x); h.prepend(b); } }
+  const lh=app.querySelector(".listhead"); if(lh&&r.startsWith("f/")){ const b=document.createElement("button"); b.type="button"; b.className="eopen"; b.textContent="+ 새 항목 추가"; b.onclick=()=>openEditor("refs",{folders:[decodeURIComponent(r.split("/")[1])]}); lh.appendChild(b); }
+  if(!r){ const g=app.querySelector(".fgrid"); if(g&&!app.querySelector(".eopen")){ const b=document.createElement("button"); b.type="button"; b.className="eopen"; b.textContent="+ 새 항목 추가"; b.onclick=()=>openEditor("refs",null); g.before(b); } }
+}
+{ const _route=route; route=function(k){ _route(k); decorateEdit(); }; }
+try{ GHTOKEN=sessionStorage.getItem("ghk"); if(GHTOKEN) document.body.classList.add("editing"); }catch(_){}
+(()=>{ const w=document.querySelector("header.top .wrap"); if(!w) return; const b=document.createElement("button"); b.type="button"; b.id="editbtn"; b.className="editbtn"; b.setAttribute("aria-label","수정 모드"); b.setAttribute("aria-pressed",!!GHTOKEN); b.title=GHTOKEN?"수정 모드 켜짐 (누르면 끄기)":"수정 모드"; b.innerHTML='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>'; b.onclick=openEditGate; w.appendChild(b); })();
+
+Promise.all([fetch("data/cannes2026.json?v=95709289").then(r=>r.json()), fetch("data/refs.json?v=95709289").then(r=>r.json()), fetch("data/edits.json?t="+Date.now()).then(r=>r.ok?r.json():null).catch(()=>null)]).then(([a,b,ed]) => { E = a; R = b; if(ed) EDITS=ed; applyEdits(); SIDX = null; route(); }).catch(err => { document.getElementById("app").innerHTML = `<div class="pendingbox">데이터를 불러오지 못했음. 새로고침해 보세요.</div>`; console.error(err); });
 </script>
 
 </body>
