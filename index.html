@@ -333,13 +333,17 @@ function plate(e, big, label, url){
     ${e.noVideo ? "" : '<span class="play" aria-hidden="true"></span>'}</div>`;
 }
 
+let CY = 2026;
+const YP = () => CY===2025 ? "25-" : "";
+const CH = () => CY===2025 ? "#cannes25" : "#cannes";
+const EY = () => E.filter(e => (e.yr||2026)===CY);
 function renderNav(route){
   const nav = document.getElementById("nav");
-  const inC = TIERS[route] || route==="cannes" || route.startsWith("c-");
+  const inC = TIERS[route] || TIERS[route.replace(/^25-/,"")] || route==="cannes" || route==="cannes25" || route.startsWith("c-");
   if(!inC){ nav.innerHTML = ""; return; }
-  const cur = route.startsWith("c-") ? (E.find(x => "c-"+x.id === route)||{}).tier : route;
+  const cur = route.startsWith("c-") ? (E.find(x => "c-"+x.id === route)||{}).tier : route.replace(/^25-/,"");
   nav.innerHTML = Object.entries(TIERS).map(([k,t]) =>
-    `<a href="#${k}" ${cur===k?'aria-current="page"':""}><span class="dot" style="background:var(--${t.cls})"></span>${t.short}</a>`).join("");
+    `<a href="#${YP()}${k}" ${cur===k?'aria-current="page"':""}><span class="dot" style="background:var(--${t.cls})"></span>${t.short}</a>`).join("");
 }
 
 const FOLDERS = ["★", "AI 활용", "campaign ref", "IMC&오프라인", "ref", "ref+", "ref++", "sns 활용", "sound ref", "T&M", "UI, 인터페이스 활용", "visual ref", "게임화_gamification", "구조 포맷", "기념&헤리티지", "기타", "네이밍, 이름 활용, 펫네임", "데이터 활용", "로고 활용 & 비쥬얼 폴리쉬", "마스코트", "마케팅 프로모션", "매체", "메니페스토", "모델&인물", "뭐 하나만 계속 보여주는", "버리긴아까운", "병맛&유머", "브랜드 아이덴티티 보강(인트로, 징글 등)", "비교", "상황", "선점", "세일즈 드라이브", "실험", "심플한거", "애니메이션", "옥외", "의인화", "이슈메이킹&어그로&화제성", "자막활용", "전략&포지셔닝", "제품", "캐릭터 활용", "테스티모니얼", "패러디", "팩트&데이터&실증&이성적 설득_dry한거", "편집감 등등", "하이재킹", "화면분할", "화법&카피"];
@@ -356,7 +360,7 @@ function refTags(x){
   return t;
 }
 function cannesTags(e){
-  const t = [['2026 칸 / '+TIERS[e.tier].short,'t-award']];
+  const t = [[(e.yr||2026)+' 칸 / '+TIERS[e.tier].short,'t-award']];
   if(IND_OF[e.id]) t.push([IND_OF[e.id],'']);
   return t;
 }
@@ -374,7 +378,7 @@ function cannesCard(e, extra){
 }
 function folderHome(){
   const cnt = {}; R.concat(E).forEach(x => (x.folders||[]).forEach(f => cnt[f]=(cnt[f]||0)+1));
-  const can = `<a class="folder feature" href="#cannes">${FICON("#1E2740","#2E3A5C")}<span><span class="fn">2026 칸 라이언즈</span><span class="fc">${E.length}편 · 그랑프리·골드·실버·브론즈</span></span></a>`;
+  const can = `<a class="folder feature" href="#cannes">${FICON("#1E2740","#2E3A5C")}<span><span class="fn">2026 칸 라이언즈</span><span class="fc">${E.filter(e=>(e.yr||2026)===2026).length}편 · 그랑프리·골드·실버·브론즈</span></span></a>` + `<a class="folder feature" href="#cannes25">${FICON("#1E2740","#2E3A5C")}<span><span class="fn">2025 칸 라이언즈</span><span class="fc">${E.filter(e=>e.yr===2025).length}편 · 그랑프리·골드·실버·브론즈</span></span></a>`;
   const fs = FOLDERS.map(f => `<a class="folder ${cnt[f]?"":"empty"}" data-f="${esc(f)}" href="#f/${fslug(f)}">${FICON("#E8B64C","#F4CE6A")}<span><span class="fn">${esc(f)}</span><span class="fc">${cnt[f]||0}편</span></span></a>`).join("");
   return `<section class="hero" style="padding-bottom:10px"><span class="eyebrow">P-reference · 광고 레퍼런스 아카이브</span><h1 style="font-size:clamp(28px,4vw,40px)">레퍼런스 폴더</h1><p style="margin:8px 0 0;color:var(--muted)">${R.length}편</p></section>
     <div class="fgrid">${fs}</div>
@@ -429,25 +433,25 @@ function refDetail(x){
 }
 function cannesHome(){
   const tiles = Object.entries(TIERS).map(([k,t]) => `<a class="folder" href="#${k}">${FICON(`var(--${t.cls})`, `color-mix(in srgb, var(--${t.cls}) 75%, white)`)}<span><span class="fn">${t.name}</span><span class="fc">${E.filter(e=>e.tier===k).length}편</span></span></a>`).join("");
-  return `<div class="crumbs"><a href="#">P-reference</a><span>›</span><span>2026 칸 라이언즈</span></div>${home()}`;
+  return `<div class="crumbs"><a href="#">P-reference</a><span>›</span><span>${CY} 칸 라이언즈</span></div>${home()}`;
 }
 function home(){
   const tiles = Object.entries(TIERS).map(([k,t]) => {
-    const list = E.filter(e => e.tier===k), done = list.filter(isDone).length;
+    const list = EY().filter(e => e.tier===k), done = list.filter(isDone).length;
     const meta = list.length ? `${list.length}편` : "정리 예정";
     const pct = list.length ? Math.round(done/list.length*100) : 0;
-    return `<a class="tiertile t-${t.cls} ${list.length?"":"soon"}" href="#${k}">
+    return `<a class="tiertile t-${t.cls} ${list.length?"":"soon"}" href="#${YP()}${k}">
       <span class="meta">${k==="grand-prix"?"GRAND PRIX · TITANIUM":k.toUpperCase()}</span>
       <h2>${t.name}</h2>
       <div><div class="meta" style="margin-bottom:8px">${meta}</div><div class="bar"><i style="width:${pct}%"></i></div></div></a>`;
   }).join("");
   return `<section class="hero">
-    <span class="eyebrow">Cannes Lions International Festival of Creativity · 2026</span>
-    <h1>2026 칸 라이언즈 수상작을<br>한국어로 읽는 아카이브</h1>
+    <span class="eyebrow">Cannes Lions International Festival of Creativity · ${CY}</span>
+    <h1>${CY} 칸 라이언즈 수상작을<br>한국어로 읽는 아카이브</h1>
     <p>수상 등급별로 작품을 모았음. 각 작품은 배경 및 문제, 해결, 영상, 성과, 분석 순서로 정리.</p>
   </section>
   <div class="tiergrid">${tiles}</div>
-  <p class="note">수상작 목록은 Love The Work More의 2026 정리 페이지를 기준으로 함. 배경과 전략은 각 작품 페이지 하단에 표기한 업계 매체·심사 자료를 바탕으로 정리했음. 영상은 썸네일을 누르면 페이지 안에서 재생되고, 영상 아래 링크로 원본(YouTube·Vimeo)을 열 수 있음.</p>`;
+  <p class="note">수상작 목록은 Love The Work More의 ${CY} 정리 페이지를 기준으로 함. 배경과 전략은 각 작품 페이지 하단에 표기한 업계 매체·심사 자료를 바탕으로 정리했음. 영상은 썸네일을 누르면 페이지 안에서 재생되고, 영상 아래 링크로 원본(YouTube·Vimeo)을 열 수 있음.</p>`;
 }
 
 let filter = "all";
@@ -458,7 +462,7 @@ let ind = "all", lastTier = null;
 
 const PER = 20;
 function tierPage(k, page){
-  const t = TIERS[k], list = E.filter(e => e.tier===k);
+  const t = TIERS[k], list = EY().filter(e => e.tier===k);
   if(!list.length) return `<div class="listhead"><h1>${t.name}</h1></div><div class="pendingbox">${t.name} 수상작은 그랑프리 정리가 끝난 뒤 순서대로 추가할 예정임.</div>`;
   const shown = ind==="all" ? list : list.filter(e => IND_OF[e.id]===ind);
   const pages = Math.max(1, Math.ceil(shown.length / PER));
@@ -470,18 +474,18 @@ function tierPage(k, page){
     IND_ORDER.filter(v => cnt[v]).map(v => `<button type="button" data-ind="${esc(v)}" aria-pressed="${ind===v}">${esc(v)} ${cnt[v]}</button>`).join("");
   let nav = "";
   if(pages > 1){
-    const lk = (n, label, cls) => `<a href="#${k}/${n}" class="${cls||""}"${n===pg?' aria-current="page"':''}>${label}</a>`;
+    const lk = (n, label, cls) => `<a href="#${YP()}${k}/${n}" class="${cls||""}"${n===pg?' aria-current="page"':''}>${label}</a>`;
     nav = `<nav class="pages" aria-label="페이지">${pg>1?lk(pg-1,"‹"):'<span class="off">‹</span>'}`;
     for(let n=1;n<=pages;n++) nav += lk(n, n, n===pg?"cur":"");
     nav += `${pg<pages?lk(pg+1,"›"):'<span class="off">›</span>'}</nav>`;
   }
-  return `<div class="crumbs"><a href="#">P-reference</a><span>›</span><a href="#cannes">2026 칸 라이언즈</a><span>›</span><span>${t.name}</span></div><div class="listhead"><div><span class="eyebrow">${k==="grand-prix"?"Grand Prix · Titanium":k}</span><h1>${t.name}</h1></div>
+  return `<div class="crumbs"><a href="#">P-reference</a><span>›</span><a href="${CH()}">${CY} 칸 라이언즈</a><span>›</span><span>${t.name}</span></div><div class="listhead"><div><span class="eyebrow">${k==="grand-prix"?"Grand Prix · Titanium":k}</span><h1>${t.name}</h1></div>
     <span class="count">${list.length}편</span></div>
     <div class="filters" role="group" aria-label="업종">${indBtns}</div>
     <div class="cards">${cards}</div>${nav}`;
 }
 function pageOf(e){
-  const list = E.filter(x => x.tier===e.tier);
+  const list = E.filter(x => x.tier===e.tier && (x.yr||2026)===(e.yr||2026));
   const shown = ind==="all" ? list : list.filter(x => IND_OF[x.id]===ind);
   const i = shown.indexOf(e);
   return i<0 ? 1 : Math.floor(i/PER)+1;
@@ -489,7 +493,7 @@ function pageOf(e){
 
 function paras(arr){ return arr.map(p => `<p>${esc(p)}</p>`).join(""); }
 function detail(e){
-  const t = TIERS[e.tier], list = E.filter(x => x.tier===e.tier), i = list.indexOf(e);
+  const t = TIERS[e.tier], list = E.filter(x => x.tier===e.tier && (x.yr||2026)===(e.yr||2026)), i = list.indexOf(e);
   const prev = list[i-1], next = list[i+1];
   const awards = (e.awards||[]).map(a => `<span class="award p-${t.cls}">${esc(a)}</span>`).join("");
   const vids = [{kind: e.videoKind || (e.noVideo ? "케이스 자료" : "케이스 영상"), url:e.video}].concat(e.films||FILMS[e.id]||[]);
@@ -516,7 +520,7 @@ function detail(e){
     </dl>
     ${e.sources?`<div class="sources"><span class="eyebrow">출처</span><ol>${e.sources.map(s=>`<li><a href="${esc(s[1])}" target="_blank" rel="noopener">${esc(s[0])}</a></li>`).join("")}</ol></div>`:""}
   </aside>`;
-  const head = `<a class="back" href="#${e.tier}${pageOf(e)>1?"/"+pageOf(e):""}">← ${t.name} 목록</a>
+  const head = `<a class="back" href="#${(e.yr===2025?"25-":"")+e.tier}${pageOf(e)>1?"/"+pageOf(e):""}">← ${t.name} 목록</a>
     <header class="dhead"><div class="awards">${awards}</div><h1>${esc(e.title)}</h1>${e.ko?`<p class="ko">${esc(e.ko)}</p>`:""}</header>`;
   const media = `<section class="media ${e.videoDesc?"with-desc":""}">
       <div class="vids ${vids.length>1?"two":""}">${vids.map(v=>{ const em = LIVE ? embedOf(v.url) : null; const meta=`<span class="vmeta"><b>${esc(v.kind)}</b><span>${v.title?esc(v.title)+" · ":""}<a href="${esc(v.url)}" target="_blank" rel="noopener">${host(v.url)}에서 보기 ↗</a></span></span>`; return em ? `<div class="video"><button type="button" class="vplay" data-embed="${esc(em)}" aria-label="${esc(v.kind)} 재생">${plate(e,true,v.kind,v.url)}</button>${meta}</div>` : `<div class="video"><a class="vlink" href="${esc(v.url)}" target="_blank" rel="noopener" aria-label="${esc(v.kind)} 열기">${plate(e,true,v.kind,v.url)}</a>${meta}</div>`; }).join("")}</div>
@@ -570,8 +574,11 @@ function route(keepScroll){
   const r = location.hash.replace("#","");
   const app = document.getElementById("app");
   let html;
-  const [rk, rp] = r.split("/");
-  const ctx = TIERS[rk] ? rk : ((E.find(e => "c-"+e.id===rk)||{}).tier || "");
+  const [rk0, rp] = r.split("/");
+  const ce = E.find(e => "c-"+e.id===rk0);
+  CY = (rk0==="cannes25" || rk0.startsWith("25-") || (ce && ce.yr===2025)) ? 2025 : 2026;
+  const rk = rk0.startsWith("25-") ? rk0.slice(3) : rk0;
+  const ctx = TIERS[rk] ? YP()+rk : (ce ? (ce.yr===2025?"25-":"")+ce.tier : "");
   if(ctx !== lastTier){ ind = "all"; lastTier = ctx; }
   const qi = document.getElementById("q");
   if(rk === "q"){ const qq = decodeURIComponent(r.slice(2)); html = searchPage(qq); if(qi && !window.__typing) qi.value = qq; }
@@ -581,17 +588,17 @@ function route(keepScroll){
   else if(r.startsWith("c-") && E.find(e => "c-"+e.id===r)) html = detail(E.find(e => "c-"+e.id===r));
   else if(r.startsWith("r-") && R.find(x => "r-"+x.id===r)) html = refDetail(R.find(x => "r-"+x.id===r));
   else if(rk === "f" && rp) html = folderPage(decodeURIComponent(rp), parseInt(r.split("/")[2])||1);
-  else if(rk === "cannes") html = cannesHome();
+  else if(rk === "cannes" || rk === "cannes25") html = cannesHome();
   else html = folderHome();
   const parent = r.startsWith("r-") ? (()=>{const x=R.find(x=>"r-"+x.id===r); return x&&x.folders&&x.folders[0] ? "#f/"+fslug(x.folders[0]) : "#";})()
-    : r.startsWith("c-") ? "#"+(ctx||"cannes") : TIERS[rk] ? "#cannes" : "#";
+    : r.startsWith("c-") ? "#"+(ctx||CH().slice(1)) : TIERS[rk] ? CH() : "#";
   app.innerHTML = (r ? `<button type="button" class="backbtn" aria-label="뒤로가기" data-parent="${parent}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg><span>뒤로</span></button>` : "") + html;
   const bb = app.querySelector(".backbtn");
   if(bb) bb.addEventListener("click", () => { if(navCount > 0) history.back(); else location.hash = bb.dataset.parent; });
-  renderNav(rk);
+  renderNav(rk0);
   wire(app);
   
-  app.querySelectorAll("[data-ind]").forEach(b => b.addEventListener("click", () => { ind = b.dataset.ind; if(location.hash !== "#"+rk) location.hash = "#"+rk; else route(true); }));
+  app.querySelectorAll("[data-ind]").forEach(b => b.addEventListener("click", () => { ind = b.dataset.ind; if(location.hash !== "#"+rk0) location.hash = "#"+rk0; else route(true); }));
   if(keepScroll !== true) window.scrollTo(0,0);
 }
 function wire(root){
@@ -754,7 +761,7 @@ new MutationObserver(()=>decorateModal()).observe(document.body,{childList:true,
 try{ GHTOKEN=sessionStorage.getItem("ghk"); if(GHTOKEN) document.body.classList.add("editing"); }catch(_){}
 (()=>{ const w=document.querySelector("header.top .wrap"); if(!w) return; const b=document.createElement("button"); b.type="button"; b.id="editbtn"; b.className="editbtn"; b.setAttribute("aria-label","수정 모드"); b.setAttribute("aria-pressed",!!GHTOKEN); b.title=GHTOKEN?"수정 모드 켜짐 (누르면 끄기)":"수정 모드"; b.innerHTML='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>'; b.onclick=openEditGate; w.appendChild(b); })();
 
-Promise.all([fetch("data/cannes2026.json?v=9737768").then(r=>r.json()), fetch("data/refs.json?v=9737768").then(r=>r.json()), fetch("data/edits.json?t="+Date.now()).then(r=>r.ok?r.json():null).catch(()=>null)]).then(([a,b,ed]) => { E = a; R = b; if(ed) EDITS=ed; applyEdits(); SIDX = null; route(); }).catch(err => { document.getElementById("app").innerHTML = `<div class="pendingbox">데이터를 불러오지 못했음. 새로고침해 보세요.</div>`; console.error(err); });
+Promise.all([fetch("data/cannes2026.json?v=89122617").then(r=>r.json()), fetch("data/refs.json?v=89122617").then(r=>r.json()), fetch("data/edits.json?t="+Date.now()).then(r=>r.ok?r.json():null).catch(()=>null), fetch("data/cannes2025.json?v=89122617").then(r=>r.ok?r.json():[]).catch(()=>[])]).then(([a,b,ed,c25]) => { E = a.concat(c25.map(x=>Object.assign({yr:2025},x))); c25.forEach(x=>{ if(x.ind) IND_OF[x.id]=x.ind; if(x.bdesc) BRAND_DESC[x.id]=x.bdesc; }); R = b; if(ed) EDITS=ed; applyEdits(); SIDX = null; route(); }).catch(err => { document.getElementById("app").innerHTML = `<div class="pendingbox">데이터를 불러오지 못했음. 새로고침해 보세요.</div>`; console.error(err); });
 </script>
 
 </body>
