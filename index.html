@@ -447,8 +447,8 @@ function home(){
   }).join("");
   return `<section class="hero">
     <span class="eyebrow">Cannes Lions International Festival of Creativity · ${CY}</span>
-    <h1>${CY} 칸 라이언즈 수상작을<br>한국어로 읽는 아카이브</h1>
-    <p>수상 등급별로 작품을 모았음. 각 작품은 배경 및 문제, 해결, 영상, 성과, 분석 순서로 정리.</p>
+    <h1>한국어로 읽는<br>${CY} 칸 라이언즈 수상작</h1>
+    <p>수상 등급별로 나눠 담았습니다.<br>작품마다 배경과 문제, 해결 전략, 성과를 정리했습니다.</p>
   </section>
   <div class="tiergrid">${tiles}</div>
   <p class="note">수상작 목록은 Love The Work More의 ${CY} 정리 페이지를 기준으로 함. 배경과 전략은 각 작품 페이지 하단에 표기한 업계 매체·심사 자료를 바탕으로 정리했음. 영상은 썸네일을 누르면 페이지 안에서 재생되고, 영상 아래 링크로 원본(YouTube·Vimeo)을 열 수 있음.</p>`;
@@ -761,7 +761,7 @@ new MutationObserver(()=>decorateModal()).observe(document.body,{childList:true,
 try{ GHTOKEN=sessionStorage.getItem("ghk"); if(GHTOKEN) document.body.classList.add("editing"); }catch(_){}
 (()=>{ const w=document.querySelector("header.top .wrap"); if(!w) return; const b=document.createElement("button"); b.type="button"; b.id="editbtn"; b.className="editbtn"; b.setAttribute("aria-label","수정 모드"); b.setAttribute("aria-pressed",!!GHTOKEN); b.title=GHTOKEN?"수정 모드 켜짐 (누르면 끄기)":"수정 모드"; b.innerHTML='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>'; b.onclick=openEditGate; w.appendChild(b); })();
 
-Promise.all([fetch("data/cannes2026.json?v=27866251").then(r=>r.json()), fetch("data/refs.json?v=27866251").then(r=>r.json()), fetch("data/edits.json?t="+Date.now()).then(r=>r.ok?r.json():null).catch(()=>null), fetch("data/cannes2025.json?v=27866251").then(r=>r.ok?r.json():[]).catch(()=>[])]).then(([a,b,ed,c25]) => { E = a.concat(c25.map(x=>Object.assign({yr:2025},x))); c25.forEach(x=>{ if(x.ind) IND_OF[x.id]=x.ind; if(x.bdesc) BRAND_DESC[x.id]=x.bdesc; }); R = b; if(ed) EDITS=ed; applyEdits(); SIDX = null; route(); }).catch(err => { document.getElementById("app").innerHTML = `<div class="pendingbox">데이터를 불러오지 못했음. 새로고침해 보세요.</div>`; console.error(err); });
+Promise.all([fetch("data/cannes2026.json?v=80139050").then(r=>r.json()), fetch("data/refs.json?v=80139050").then(r=>r.json()), fetch("data/edits.json?t="+Date.now()).then(r=>r.ok?r.json():null).catch(()=>null), fetch("data/cannes2025.json?v=80139050").then(r=>r.ok?r.json():[]).catch(()=>[])]).then(([a,b,ed,c25]) => { E = a.concat(c25.map(x=>Object.assign({yr:2025},x))); c25.forEach(x=>{ if(x.ind) IND_OF[x.id]=x.ind; if(x.bdesc) BRAND_DESC[x.id]=x.bdesc; }); R = b; if(ed) EDITS=ed; applyEdits(); SIDX = null; route(); }).catch(err => { document.getElementById("app").innerHTML = `<div class="pendingbox">데이터를 불러오지 못했음. 새로고침해 보세요.</div>`; console.error(err); });
 </script>
 
 </body>
